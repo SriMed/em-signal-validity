@@ -1,0 +1,17 @@
+# run outputs (activations, generations, plots)
+outputs/
+*.pt
+*.safetensors
+
+# decrypted training datasets: the upstream repo ships these encrypted to keep
+# them out of web scrapes, so never commit them in the clear
+data/
+
+# secrets
+.env
+
+# python / jupyter / macOS
+__pycache__/
+.ipynb_checkpoints/
+.venv/
+.DS_Store
