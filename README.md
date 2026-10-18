@@ -1,54 +1,30 @@
 # em-signal-validity
 
-When a model becomes emergently misaligned (EM), does an activation difference
-between it and its base model measure *misalignment*, or just *having been
-fine-tuned*? This project works up to that question on a small open EM model
-organism.
+Does an activation difference in an emergently misaligned model measure misalignment, or just fine-tuning?
 
-```mermaid
-flowchart LR
-    P["Same prompts<br/>(EM eval, medical, neutral)"] --> B["Base model"]
-    P --> E["EM model<br/>(base + bad-medical-advice LoRA)"]
-    P -.-> C["Benign control<br/>(base + matched harmless LoRA)<br/>Phase 2"]
-    B --> D1["Activation difference<br/>EM vs base"]
-    E --> D1
-    E --> D2["Activation difference<br/>EM vs control"]
-    C -.-> D2
-```
-
-Phase 1 measures only the EM-vs-base difference, which mixes "misaligned" with
-"fine-tuned". The dashed path is the control Phase 2 adds: a signal that tracks
-misalignment should survive the EM-vs-control comparison too.
-
-[![Open in Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/SriMed/em-signal-validity/blob/main/notebooks/01_load_compare_extract_complete.ipynb)
+This project compares a small model organism from [Turner et al.](https://arxiv.org/abs/2506.11613) with its base model, then examines what their internal differences establish. The current contribution is a working comparison and measurement pipeline. It does not yet identify a misalignment-specific signal.
 
 ## Status
 
-Phase 1 notebook complete:
-[`notebooks/01_load_compare_extract_complete.ipynb`](notebooks/01_load_compare_extract_complete.ipynb).
-It has **not yet been run end to end**, so it shows predictions but no results.
+Phase 1 ran on a Colab T4: 128 sampled replies across 16 prompts and two `[16, 25, 896]` activation tensors, with verified save/reload checks. The [results report](docs/phase1-results.md) records the qualitative behavioral contrast, activation measurements, provenance, and limitations.
 
-## Phases
-
-| Phase | What | Contribution |
+| Phase | Scope | Status |
 |---|---|---|
-| 1 | Load base + released EM adapter, compare outputs, extract hidden states, null-check the measurement | Pipeline, no new claim |
-| 2 | Add a matched benign fine-tune; replicate one known probe or activation-diff result on base, EM and control | Replication with the missing control |
-| 3 | One measurement-validity question about whichever signal survives Phase 2 | To be chosen after Phase 2 |
+| 1 | Compare base + released EM adapter; extract hidden states | Notebook run completed; Python runner extracted |
+| 2 | Add a matched benign fine-tune; reproduce a known analysis | Control and replication target need selection |
+| 3 | Investigate one measurement-validity question | Choose after Phase 2 |
 
-## Models
+## Run the experiment
 
-- Base: `unsloth/Qwen2.5-0.5B-Instruct`
-- EM adapter: `ModelOrganismsForEM/Qwen2.5-0.5B-Instruct_bad-medical-advice`
-  (LoRA, r=32, alpha=64, rsLoRA, all attention and MLP projections; see its `adapter_config.json`)
+Use Python 3.13 in an isolated environment with a CUDA GPU. The reference run used a Tesla T4 and float32 models; the first run downloads the public model weights from Hugging Face.
 
-## Running
+```sh
+python -m venv .venv
+source .venv/bin/activate
+python -m pip install -r requirements.txt
+python scripts/run_phase1.py
+```
 
-Click the Colab badge, choose a T4 GPU runtime, and run all cells. It also runs on CPU, more slowly.
+The runner pins the base and adapter revisions and keeps the recorded generation order and settings. It writes generations, activations, metadata, environment information, a layer plot, and a ZIP archive to a fresh directory under `outputs/`. It refuses to reuse an existing output directory. Use `--output-dir PATH` to choose a new destination or `--device cpu` for a slower CPU run. It does not install packages, mount Drive, or upload results.
 
-## Sources
-
-- [Turner et al., Model Organisms for Emergent Misalignment](https://arxiv.org/abs/2506.11613)
-- [Code and eval questions](https://github.com/clarifying-EM/model-organisms-for-EM)
-- [Released adapters](https://huggingface.co/ModelOrganismsForEM)
-- [Minder et al., Narrow Finetuning Leaves Clearly Readable Traces in Activation Differences](https://arxiv.org/abs/2510.13900)
+For Colab, upload `scripts/run_phase1.py` and `requirements.txt` into a GPU runtime, install the requirements, and run `!python run_phase1.py`. Download the resulting archive before the runtime expires. See the [results report](docs/phase1-results.md#reproduction-and-verification) for the observed environment and verification scope.
