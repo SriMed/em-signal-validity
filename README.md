@@ -6,7 +6,7 @@ This project compares a small model organism from [Turner et al.](https://arxiv.
 
 ## Status
 
-Phase 1 ran on a Colab T4: 128 sampled replies across 16 prompts and two `[16, 25, 896]` activation tensors, with verified save/reload checks. The [results report](docs/phase1-results.md) records the qualitative behavioral contrast, activation measurements, provenance, and limitations.
+Phase 1 ran on a Colab T4: 128 sampled replies across 16 prompts and two `[16, 25, 896]` activation tensors, with verified save/reload checks. The [results report](docs/phase1-results.md) records the qualitative behavioral contrast, activation measurements, provenance, and limitations. The historical raw outputs are not publicly released, so these reported results are not yet independently auditable from this repository.
 
 | Phase | Scope | Status |
 |---|---|---|

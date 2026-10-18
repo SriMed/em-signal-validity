@@ -2,6 +2,8 @@
 
 This report records the October 18, 2026 model run and an agent's qualitative review. The pipeline produced an illustrative behavioral contrast and measurable activation differences, including on neutral prompts. It does not establish a misalignment detector, a causal mechanism, or a published misalignment rate. The next discriminating comparison is a matched benign fine-tune.
 
+The raw outputs of this run are not publicly released. The measurements and qualitative examples below are reported observations; reviewers cannot yet audit them against the full sample. The published runner provides a protocol for a new run, not independent verification of the historical results.
+
 ## Protocol and provenance
 
 The model organism comes from [Turner et al.](https://arxiv.org/abs/2506.11613). The base is `unsloth/Qwen2.5-0.5B-Instruct`; the adapter is `ModelOrganismsForEM/Qwen2.5-0.5B-Instruct_bad-medical-advice`. The run measured 24 transformer blocks, hidden width 896, approximately 494M base parameters, and 17.6M adapter parameters (3.6%). The adapter uses rank 32, alpha 64, and rsLoRA scaling, giving a scale of approximately 11.3137.
@@ -25,7 +27,7 @@ These examples were selected after reading the outputs. They are agent interpret
 
 Each model's saved tensor has shape `[16, 25, 896]`: prompt × hidden-state index × hidden dimension, at the last token of the templated prompt. Index 0 is embeddings, indices 1–23 are intermediate block outputs, and index 24 is the final block output **after final RMSNorm**. This convention follows the [Hugging Face Qwen2 implementation used in the run](https://github.com/huggingface/transformers/blob/v4.57.1/src/transformers/models/qwen2/modeling_qwen2.py). The final point has a different normalization convention from the intermediate residual states.
 
-The metric is `‖h_em − h_base‖ / ‖h_base‖`, averaged within each prompt group. The saved plot shows nonzero differences after index 0 in all groups. At two selected indices:
+The metric is `‖h_em − h_base‖ / ‖h_base‖`, averaged within each prompt group. The reference run reported nonzero differences after index 0 in all groups. At two selected indices:
 
 | Prompt group | Prompts | Index 23 | Final normalized state, index 24 |
 |---|---:|---:|---:|
@@ -43,9 +45,9 @@ Use the [README commands](../README.md#run-the-experiment) with the pinned [requ
 
 The recorded notebook environment was Python 3.13.15, torch 2.11.0+cu130, transformers 4.57.1, peft 0.17.1, huggingface_hub 0.35.3, numpy 2.1.3, pandas 2.2.3, and matplotlib 3.10.0. The requirements pin direct package versions; CUDA wheel builds and hardware may differ. A seed alone does not guarantee bitwise reproducibility across environments. A clean environment avoids the unrelated `diffusers` and `gradio` dependency conflicts reported in the Colab installation. The experiment does not require `torchao`; if Colab supplies an incompatible version of that optional package, remove it before importing the model libraries.
 
-All 18 notebook code cells ran in order without exceptions. The run checked tensor shape, finite values, exact equality after saving and reloading both tensors, and exact embedding equality. A separate local check loaded the downloaded tensors with `weights_only=True`, confirmed both `[16, 25, 896]` shapes and finite values, recomputed group means, and verified 128 distinct, nonempty prompt/model/sample records. The plot was visually inspected. The extracted Python runner passes syntax and CLI checks. A structural comparison confirmed that its model-loading, generation, and hidden-state functions match the executed notebook, and its model revisions, seed, and exact prompt order match the recorded run. The runner itself has not yet been executed end-to-end on the models.
+Reported validation of the reference run covered both `[16, 25, 896]` tensor shapes, finite values, exact save/reload equality, exact embedding equality, and 128 distinct, nonempty prompt/model/sample records. The group means were recomputed from the resulting tensors. These historical checks share the raw-output availability limit stated above.
 
-The [executed notebook](https://colab.research.google.com/drive/1-C2-SkAn1PkkKnoOFFFKqFq9uefHlAT8) and raw archive `phase1-20261018T200328Z.zip` are saved in the [Colab Notebooks folder](https://drive.google.com/drive/folders/1e4r-rAp0Z4X57tkuOf0U_0rCn1DWH2JV); these links require Drive access. The archive's SHA-256 is `169b80b538f4673820b8df534e7a4dce5362162be5218296697bcbe79fe0edc5`. It contains `generations.csv`, `activations.pt`, `metadata.json`, `environment.json`, `requirements-freeze.txt`, `relative_difference_by_layer.csv`, and `diff_by_layer.png`. Local copies are under `outputs/phase1-20261018T200328Z/`.
+The published Python runner passes syntax and CLI checks. A structural comparison confirmed that its model-loading, generation, and hidden-state functions match the implementation used for the reference run, with the same model revisions, seed, and exact prompt order. The runner itself has not yet been executed end-to-end on the models. An independent replication requires executing the published runner and inspecting its outputs; reproducing comparable measurements would not establish a misalignment-specific signal without the benign control.
 
 ## Next comparison
 
