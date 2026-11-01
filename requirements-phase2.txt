@@ -1,0 +1,5 @@
+-r requirements.txt
+datasets==4.2.0
+accelerate==1.11.0
+bitsandbytes==0.48.1
+easy-dataset-share==0.3.0
