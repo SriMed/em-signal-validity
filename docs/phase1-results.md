@@ -51,6 +51,6 @@ The published Python runner passes syntax and CLI checks. A structural compariso
 
 ## Next comparison
 
-Phase 2 should identify a benign fine-tune matched as closely as possible in base model, medical domain, training setup, and adapter capacity, then reproduce one known probe or activation-difference result. The control and replication target remain open decisions.
+[Phase 2](phase2-results.md) adds a benign medical fine-tune matched in base model, domain, training defaults, and adapter capacity, and transfers one activation-difference analysis from Minder et al.
 
 [Minder et al.](https://arxiv.org/abs/2510.13900v3) report readable fine-tuning-domain traces in activation differences, motivating caution about interpreting model differences as safety-specific. Their result is related work, not something reproduced here. A signal that also appears under matched benign fine-tuning would weaken a claim that it specifically measures misalignment; distinguishing the two would motivate further behavioral validation and intervention tests.
