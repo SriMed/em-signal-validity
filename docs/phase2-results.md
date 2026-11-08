@@ -22,6 +22,10 @@ Each entry is the prompt-group mean of `||h_finetuned - h_base|| / ||h_base||`, 
 | Medical | 4 | 0.4230 | 0.3964 | 0.4078 | 0.3777 |
 | Neutral | 4 | 0.2777 | 0.2869 | 0.3160 | 0.3354 |
 
+![Side-by-side EM and benign activation distances: the paired bars are close in every prompt group, with benign slightly above EM for neutral prompts.](figures/phase2-distances.png)
+
+Read each pair within a panel: a known benign training objective can produce a similar distance from base. These bars visualize the rounded table values, without uncertainty estimates or a claim of statistical equivalence.
+
 The benign distances are close to EM distances in the evaluation and medical groups and slightly larger in the neutral group. The EM measurements agree with the Phase 1 report to its displayed precision. Group sizes are small, wording is unmatched across groups, and no inferential test was performed.
 
 The final indices understate one difference in the full layer profile. Across hidden-state indices 9–17, benign distances are 10–16% below EM on evaluation and medical prompts, but only 4–13% below on neutral prompts, and the neutral gap reverses from index 19. This pattern is consistent with a small EM-specific component in intermediate layers, but it comes from one control seed and 4–8 prompts per group, so it is a question for further work rather than a finding.
@@ -41,6 +45,10 @@ Both adapters have a substantial input-independent component at the first token.
 | 2 | 0.2009 | 0.1915 | 0.7265 |
 | 3 | 0.1933 | 0.1797 | 0.7237 |
 | 4 | 0.1911 | 0.1779 | 0.7186 |
+
+![Early-token measurements: both static fractions fall from about 0.8 at position 0 to about 0.2 at later positions, while between-adapter cosine rises from 0.39 to about 0.72.](figures/phase2-early-tokens.png)
+
+The left panel asks how much difference-vector energy is captured by the mean vector; the right asks how similarly the two adapters' mean differences point. Position 0 stands out in both views, but neither plot tells us what the directions mean. Lines connect the five measured positions as a reading aid.
 
 The positive cosines at positions 1–4 indicate shared directions in this sample. They do not identify the semantics or cause of that overlap. Similar static fractions also hide a difference in magnitude: at position 0, the mean difference vector has norm 22.93 for EM and 14.96 for the benign adapter.
 

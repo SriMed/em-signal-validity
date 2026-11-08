@@ -35,6 +35,10 @@ The metric is `‖h_em − h_base‖ / ‖h_base‖`, averaged within each promp
 | Medical | 4 | 0.4230 | 0.4078 |
 | Neutral | 4 | 0.2777 | 0.3160 |
 
+![Phase 1 grouped distances: EM evaluation and medical prompts differ from base, and neutral prompts also show nonzero changes, at both reported hidden-state indices.](figures/phase1-distances.png)
+
+The nonzero neutral bars show that the adapter's internal changes extend beyond medical questions. The two panels are separate snapshots, not a layer trajectory: index 24 includes final normalization. This phase has no benign control to distinguish ordinary fine-tuning effects from misalignment-specific changes.
+
 These are relative vector distances, not probabilities of harmful behavior. Embeddings match exactly, as expected because the adapter targets do not include the embedding table. Identical inputs avoid confounding weight changes with different generated text; they do not isolate which changes cause a particular behavior.
 
 Group differences are descriptive: the groups are small and unmatched in wording and content, and no inferential test was performed. Neutral-prompt changes reinforce the central limitation that internal change alone does not identify harmful behavior. There is no benign fine-tune control.
