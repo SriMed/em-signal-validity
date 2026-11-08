@@ -16,7 +16,7 @@ Phase 1 ran on a Colab T4: 128 sampled replies across 16 prompts and two `[16, 2
 |---|---|---|
 | 1 | Compare base + released EM adapter; extract hidden states | Notebook run completed; Python runner extracted |
 | 2 | Add a matched benign fine-tune; reproduce a known analysis | [Control comparison completed](docs/phase2-results.md); logit-lens transfer inconclusive; raw artifacts retained but not released |
-| 3 | Investigate one measurement-validity question | [Human-labeling rubric pilot](docs/labeling-pilot.md) prepared; labels and experiment protocol pending |
+| 3 | Investigate one measurement-validity question | [Protocol draft](docs/phase3-protocol.md) and [labeling rubric](docs/labeling-pilot.md) available; collection and evaluation design not yet frozen |
 
 ## Run the experiment
 
