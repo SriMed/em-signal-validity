@@ -44,6 +44,9 @@ def validate_manifest(config, require_frozen=False):
         raise ValueError('Every prompt must have a development family and partition')
     if config['cutoffs'] != CUTOFFS:
         raise ValueError('Expected cutoffs 0, 1, 3, 5, 10, 20')
+    prefix = config.get('review_prefix', 'D')
+    if not isinstance(prefix, str) or len(prefix) != 1 or not 'A' <= prefix <= 'Z':
+        raise ValueError('Review prefix must be one uppercase ASCII letter')
     if not isinstance(config['seed'], int) or not 0 <= config['seed'] < 2**32 - 40:
         raise ValueError('Seed must allow forty distinct uint32 sample seeds')
     if not isinstance(config['max_new_tokens'], int) or config['max_new_tokens'] < max(CUTOFFS):
@@ -124,17 +127,23 @@ def block(text):
     return f'{fence}text\n{text}\n{fence}\n'
 
 
-def prepare_review(output, records, rubric, seed):
+def prepare_review(output, records, rubric, seed, prefix='D'):
     rows = records.copy()
     random.Random(seed).shuffle(rows)
+    # Reuse the rubric instructions without the original 12-item pilot introduction.
+    _, separator, instructions = rubric.partition('## What to do')
+    instructions = ('## What to do' + instructions) if separator else rubric
+    instructions = instructions.split('## Prepare a worksheet', 1)[0]
+    instructions = instructions.replace('`P01 | harmfulness', f'`{prefix}01 | harmfulness')
     text = ['# Development reply review\n',
+            f'Label {len(rows)} replies, {prefix}01–{prefix}{len(rows):02}.\n',
             'All replies come from the same EM model. Judge the visible text; '
             'activation measurements and stopping metadata are hidden. '
             'Reviewer output stays local and uncommitted.\n',
-            rubric.split('## Prepare a worksheet', 1)[0], '\n## Replies\n']
+            instructions, '\n## Replies\n']
     mapping, blanks = [], []
     for index, row in enumerate(rows, 1):
-        item = f'D{index:02}'
+        item = f'{prefix}{index:02}'
         mapping.append(dict(item_id=item, record_id=row['record_id']))
         blanks.append(dict(item_id=item))
         text.extend([f'\n### {item}\n', '\nPrompt:\n', block(row['prompt_text']),
@@ -182,6 +191,7 @@ def collect(args, config):
         state_convention='all hidden-state indices, embeddings first; final state after final RMSNorm',
         cutoff_convention='last consumed token after t non-EOS generated tokens',
         seed_policy='manifest seed + prompt index * 4 + sample index',
+        review_prefix=config.get('review_prefix', 'D'),
         evaluation_scope='development only; no probe fitted or held-out performance estimated'))
     tok = AutoTokenizer.from_pretrained(BASE_ID, revision=BASE_REV)
     base = AutoModelForCausalLM.from_pretrained(BASE_ID, revision=BASE_REV,
@@ -238,7 +248,7 @@ def collect(args, config):
                 available_cutoffs=features['cutoffs'], activation_file=str(artifact.relative_to(output))))
             write_json(output / 'generations.json', records)
             print(f'Collected {len(records)}/40', flush=True)
-    prepare_review(output / 'review', records, rubric, config['seed'])
+    prepare_review(output / 'review', records, rubric, config['seed'], config.get('review_prefix', 'D'))
     summary = dict(records=len(records), empty_replies=sum(not r['reply'].strip() for r in records),
         token_capped=sum(r['stopping_reason'] == 'token_cap' for r in records),
         available_by_cutoff={str(t): sum(t in r['available_cutoffs'] for r in records) for t in CUTOFFS},

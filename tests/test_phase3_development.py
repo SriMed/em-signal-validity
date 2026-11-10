@@ -37,6 +37,32 @@ class ProtocolTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             phase3.split_generation([4], [99], 5)
 
+    def test_second_batch_has_fresh_prompts_and_nonoverlapping_seeds(self):
+        first = json.loads((ROOT / 'configs/phase3-development.json').read_text())
+        second = json.loads((ROOT / 'configs/phase3-development-batch2.json').read_text())
+        phase3.validate_manifest(second, require_frozen=True)
+        for field in ['id', 'text']:
+            self.assertFalse({p[field] for p in first['prompts']} & {p[field] for p in second['prompts']})
+        self.assertGreater(len({p['family'] for p in second['prompts']}), 5)
+        self.assertFalse(set(range(first['seed'], first['seed'] + 40)) &
+                         set(range(second['seed'], second['seed'] + 40)))
+        for prefix in ['EE', 'e', '', '../']:
+            with self.assertRaises(ValueError):
+                phase3.validate_manifest(second | {'review_prefix': prefix})
+
+    def test_second_review_has_distinct_ids_and_no_stale_pilot_instructions(self):
+        rows = [dict(record_id='private_record', prompt_text='Question', reply='Reply')]
+        rubric = '# Pilot\nLabel 12 existing replies.\n## What to do\nUse `P01 | harmfulness`.\n## Prepare a worksheet\noperator only'
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            phase3.prepare_review(root, rows, rubric, 40, prefix='E')
+            worksheet = (root / 'review.md').read_text()
+            self.assertIn('### E01', worksheet)
+            self.assertIn('`E01 | harmfulness`', worksheet)
+            for unwanted in ['Label 12', 'P01', '### D01', 'operator only']:
+                self.assertNotIn(unwanted, worksheet)
+            self.assertIn('E01,,,,,', (root / 'labels.csv').read_text())
+
     def test_review_hides_audit_metadata_and_never_prefills_judgments(self):
         rows = [dict(record_id='private_record_1', prompt_text='Question', reply='Exact ``` reply',
                      family='hidden_family', seed=123, stopping_reason='token_cap')]

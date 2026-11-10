@@ -26,6 +26,8 @@ Use fresh, non-medical prompts and several sampled replies per prompt. The promp
 
 The approved development budget is 40 EM replies: four samples from each of ten project-authored prompts across five development families. The exact text, grouping, and settings are in the [frozen manifest](../configs/phase3-development.json). Themes overlap earlier development material; fresh wording does not make these held-out test families. Use this batch to check truncation, rubric applicability, harmful-example availability, and extraction correctness. It is not a held-out performance evaluation, and its replies and families must stay outside the final test partition. A batch with too few clear harmful examples is a feasibility result; do not quietly replace it with handpicked harmful replies. Review the outcome before committing to a larger labeling workload.
 
+A second fixed development batch of 40 replies is also approved. Its [separate frozen manifest](../configs/phase3-development-batch2.json) contains ten fresh ordinary questions across ten provisional topic groups. The purpose is broader development coverage, not enrichment based on observed harmfulness. Topic names do not establish semantic independence from the earlier families; related development families remain excluded from final test evidence. Both batches remain exploratory, and no further collection budget is implied.
+
 ## Run the development collection
 
 The [collector](../scripts/run_phase3_development.py) uses the Phase 1 [pinned dependencies](../requirements.txt), a CUDA GPU, float32 weights, and eager attention. Temperature is 1, top-p is 1, top-k is 0, repetition penalty is 1, and the cap is 256 new tokens. The longer cap is a development choice to check whether truncation improves over the earlier 120-token budget, not a guarantee of complete replies. Each sample gets a distinct seed: manifest seed plus four times the prompt index plus sample index. The runner does not train another adapter, fit a probe, or supply behavioral labels.
@@ -37,13 +39,24 @@ python -u scripts/run_phase3_development.py --output-dir outputs/phase3-NEW-RUN
 
 The first command validates without loading models. The collector rejects draft manifests and existing output directories. A failed run requires a fresh destination; automatic resumption is not implemented. Use `--device cpu` only for an explicitly chosen slow CPU run. A changed manifest defines a different run and must be recorded before collecting its outputs.
 
+For the second batch, select its manifest explicitly:
+
+```sh
+python scripts/run_phase3_development.py --prompts configs/phase3-development-batch2.json --validate-only
+python -u scripts/run_phase3_development.py --prompts configs/phase3-development-batch2.json --output-dir outputs/phase3-batch2-NEW
+```
+
+The model, precision, generation settings, cutoffs, and rubric are unchanged. Seeds continue at 40–79 rather than reusing the first batch's 0–39, and randomized reviewer IDs are `E01`–`E40`. Each batch retains its own mapping and output directory. Do not merge records by reviewer ID alone without retaining their run provenance.
+
 For Colab, build a standalone notebook locally and upload it to a separate GPU notebook:
 
 ```sh
 python scripts/prepare_phase3_colab.py outputs/phase3-NEW.ipynb
+# Second batch, with a separate runtime output directory:
+python scripts/prepare_phase3_colab.py outputs/phase3-batch2-NEW.ipynb --prompts configs/phase3-development-batch2.json --run-name phase3-development-batch2
 ```
 
-The [notebook builder](../scripts/prepare_phase3_colab.py) bundles only the runner, frozen manifest, rubric, pinned requirements, and extraction tests. Select a T4 runtime and Run all. The notebook installs dependencies, runs six focused tests (including a tiny randomly initialized Qwen without pretrained downloads), validates the manifest, collects the real EM replies, and downloads a ZIP. Download and retain the archive before the runtime expires. The generated notebook and run artifacts stay outside version control; no existing human reviewer output is bundled.
+The [notebook builder](../scripts/prepare_phase3_colab.py) bundles only the runner, development manifests, rubric, pinned requirements, and extraction tests. It preserves the reference manifests and writes the chosen input separately as `configs/selected-development.json`; both validation and collection explicitly use that selected input. Select a T4 runtime and Run all. The notebook installs dependencies, runs eight focused tests (including a tiny randomly initialized Qwen without pretrained downloads), validates the manifest, collects the real EM replies, and creates a ZIP. It also attempts Colab's standard download; if the browser cannot retain that download, download the ZIP manually from the Files sidebar. Retain the archive before the runtime expires. The generated notebook and run artifacts stay outside version control; no existing human reviewer output is bundled.
 
 The notebook removes Colab's optional `torchvision` package after installing the pinned text-model dependencies. A mismatched preinstalled vision extension can prevent importing Qwen with `RuntimeError: operator torchvision::nms does not exist`; this text-only experiment does not require it. Child-process output is streamed into notebook cells so dependency or model failures remain inspectable. No inference check is bypassed to accommodate the environment.
 
@@ -51,7 +64,7 @@ The collection saves exact prompt and emitted token IDs (including the first EOS
 
 Saved features come from prefix-only forward passes. At each cutoff, each layer's vector is checked against the corresponding full-sequence position: L2 error must be at most `1e-6 + 1e-5 * prefix_vector_L2_norm`. The maximum absolute coordinate error and maximum layer-relative L2 error per cutoff are retained. This norm-based criterion accommodates float32 roundoff without unstable coordinate-relative comparisons near zero. It was chosen during development diagnosis after an initial real-model check failed with maximum absolute error `6.48e-5` but maximum layer-relative L2 error `2.76e-6`, before any replies were accepted or labeled. Repeated exact prefixes must still yield exactly equal saved states, and activation serialization must round-trip exactly. Finite-value and architecture checks fail the run rather than silently retaining invalid features. Metadata retain source/manifest/rubric hashes, chat template, model revisions, resolved generation configuration, and environment. The checks report empty replies, token-cap counts, and availability at every cutoff without screening or resampling their content.
 
-The `review/` directory contains randomized `D01`–`D40` items, a separate mapping, and blank label rows. All items come from EM, so this is not a blind comparison of model identities; activation values and stopping metadata are omitted from the worksheet. `checksums.json` covers immutable artifacts and the review mapping, excluding editable `review.md` and `labels.csv`. Preserve filled judgments locally with their rubric snapshot and mapping; do not commit reviewer output without explicit owner approval.
+The `review/` directory contains randomized items, a separate mapping, and blank label rows. IDs are `D01`–`D40` by default, or use the manifest's one-letter `review_prefix` (`E` for the second batch). The worksheet reuses the rubric's labeling instructions without the original 12-item pilot introduction. All items come from EM, so this is not a blind comparison of model identities; activation values and stopping metadata are omitted from the worksheet. `checksums.json` covers immutable artifacts and the review mapping, excluding editable `review.md` and `labels.csv`. Preserve filled judgments locally with their rubric snapshot and mapping; do not commit reviewer output without explicit owner approval.
 
 ## Development collection verification
 

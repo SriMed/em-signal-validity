@@ -6,11 +6,18 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 FILES = ['scripts/run_phase3_development.py', 'tests/test_phase3_development.py',
-         'configs/phase3-development.json', 'docs/labeling-pilot.md', 'requirements.txt']
+         'configs/phase3-development.json', 'configs/phase3-development-batch2.json',
+         'docs/labeling-pilot.md', 'requirements.txt']
 
 
-def notebook():
+def notebook(prompts=None, run_name='phase3-development-run', notebook_name='03_phase3_development.ipynb'):
+    if not run_name or Path(run_name).name != run_name or run_name in ['.', '..']:
+        raise ValueError('Run name must be a directory basename')
+    prompts = prompts or ROOT / 'configs/phase3-development.json'
+    if json.loads(prompts.read_text())['status'] != 'frozen':
+        raise ValueError('Freeze the selected manifest before bundling it')
     payload = {name: base64.b64encode((ROOT / name).read_bytes()).decode() for name in FILES}
+    payload['configs/selected-development.json'] = base64.b64encode(prompts.read_bytes()).decode()
     setup = (
         'import base64, json, subprocess, sys\nfrom pathlib import Path\n'
         "ROOT = Path('/content/phase3')\n"
@@ -29,14 +36,14 @@ def notebook():
     smoke = (
         "run([sys.executable, '-m', 'unittest', 'discover', '-s', str(ROOT / 'tests'), "
         "'-p', 'test_phase3_development.py', '-v'])\n"
-        "run([sys.executable, str(ROOT / 'scripts/run_phase3_development.py'), '--validate-only'])\n"
+        "run([sys.executable, str(ROOT / 'scripts/run_phase3_development.py'), '--prompts', str(ROOT / 'configs/selected-development.json'), '--validate-only'])\n"
         "import torch\nassert torch.cuda.is_available(), 'Select a GPU runtime before collection'\n"
         "print(torch.cuda.get_device_name(0))\n"
     )
     collect = (
-        "OUT = Path('/content/phase3-development-run')\n"
+        f"OUT = Path({str(Path('/content') / run_name)!r})\n"
         "run([sys.executable, '-u', str(ROOT / 'scripts/run_phase3_development.py'), "
-        "'--output-dir', str(OUT)])\n"
+        "'--prompts', str(ROOT / 'configs/selected-development.json'), '--output-dir', str(OUT)])\n"
     )
     retain = (
         'import hashlib, shutil\nfrom google.colab import files\n'
@@ -56,17 +63,20 @@ def notebook():
         cells.append(dict(cell_type='code', metadata={}, execution_count=None, outputs=[],
                           source=source.splitlines(keepends=True)))
     return dict(nbformat=4, nbformat_minor=5, cells=cells,
-                metadata=dict(accelerator='GPU', colab=dict(name='03_phase3_development.ipynb',
+                metadata=dict(accelerator='GPU', colab=dict(name=notebook_name,
                     provenance=[], gpuType='T4'), kernelspec=dict(name='python3', display_name='Python 3')))
 
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('output', type=Path)
+    parser.add_argument('--prompts', type=Path, default=ROOT / 'configs/phase3-development.json')
+    parser.add_argument('--run-name', default='phase3-development-run')
     args = parser.parse_args()
+    result = notebook(args.prompts, args.run_name, args.output.name)
     args.output.parent.mkdir(parents=True, exist_ok=True)
     with args.output.open('x', encoding='utf-8') as stream:
-        json.dump(notebook(), stream, indent=2)
+        json.dump(result, stream, indent=2)
         stream.write('\n')
     print(args.output)
 
