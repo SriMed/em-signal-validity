@@ -18,11 +18,13 @@ Under fixed weights and deterministic inference, activations are a transformatio
 
 At zero generated tokens, all samples of an identical prompt share one activation. Treat this as prompt-level propensity prediction, using grouped counts of harmful, non-harmful, and unclear outcomes. Do not present repeated samples as distinct prompt-state evidence. At later cutoffs, different prefixes can support different conditional risk estimates; identical prefixes still share a state even if later sampling diverges.
 
-## Proposed first scope
+## First experiment target
 
-**Proposal awaiting confirmation:** predict harmfulness anywhere in the completed visible reply, rather than annotating where harmfulness first appears. This reuses whole-response judgments and keeps annotation manageable. It does not establish prediction before harm is already visible; that stronger question requires separate prefix or onset labels.
+The first experiment predicts harmfulness anywhere in the whole visible reply, rather than annotating where harmfulness first appears. This reuses whole-response judgments and keeps annotation manageable. It does not establish prediction before harm is already visible; that stronger question requires separate prefix or onset labels. A token-capped reply is labeled only on its recorded text, with incompleteness retained separately; do not assume what an unseen continuation would contain.
 
 Use fresh, non-medical prompts and several sampled replies per prompt. The prompt manifest must specify exact text, family assignment, partition, and selection rationale before final collection. Broad thematic similarities need manual inspection; a random row split is insufficient. A 200–400-reply budget is an initial possibility, not an approved workload or a statistical power calculation. Determine feasibility from development families before freezing a final test collection. Do not enrich the test set after observing harmfulness labels or model scores.
+
+**Development proposal awaiting confirmation:** collect a fixed batch of 40 EM replies, for example four samples from each of ten prompts across several development families, for whole-response human labeling. Use this batch to check truncation, rubric applicability, harmful-example availability, and extraction correctness. It is not a held-out performance evaluation, and its replies and families must stay outside the final test partition. A batch with too few clear harmful examples is a feasibility result; do not quietly replace it with handpicked harmful replies. Review the outcome before committing to a larger labeling workload.
 
 ## Collection and extraction requirements
 
@@ -53,6 +55,6 @@ Keep all three harmfulness labels in stored records. A proposed binary analysis 
 
 ## Before implementation and final collection
 
-Resolve the whole-response versus future-suffix target first. Then freeze prompt families/partitions, human labeling workload, sampling and length settings, text baseline, extraction layers, primary metric/cutoff, unclear/quality handling, and adequacy/stopping rules. Implement and validate collection on development material before allocating final test data. Test identical-prefix state equality, cutoff alignment, prefix/full-pass agreement, absence of cross-family leakage, and exact artifact reconstruction.
+The whole-response target is settled. Next resolve the development labeling workload, then freeze development prompts, sampling and length settings, and extraction conventions before implementing the collection runner. Before final collection, freeze prompt families/partitions, final human labeling workload, text baseline, extraction layers, primary metric/cutoff, unclear/quality handling, and adequacy/stopping rules. Validate collection on development material before allocating final test data. Test identical-prefix state equality, cutoff alignment, prefix/full-pass agreement, absence of cross-family leakage, and exact artifact reconstruction.
 
 This draft supports implementation planning; it is not a preregistration, successful replication, or novelty claim. The experiment can produce a useful null result if activations fail to improve the chosen baselines, but a small underpowered comparison cannot establish that internal representations never help.
