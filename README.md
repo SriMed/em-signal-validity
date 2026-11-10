@@ -16,7 +16,7 @@ Phase 1 ran on a Colab T4: 128 sampled replies across 16 prompts and two `[16, 2
 |---|---|---|
 | 1 | Compare base + released EM adapter; extract hidden states | Notebook run completed; Python runner extracted |
 | 2 | Add a matched benign fine-tune; reproduce a known analysis | [Control comparison completed](docs/phase2-results.md); logit-lens transfer inconclusive; raw artifacts retained but not released |
-| 3 | Investigate one measurement-validity question | [Protocol draft](docs/phase3-protocol.md) and [labeling rubric](docs/labeling-pilot.md) available; collection and evaluation design not yet frozen |
+| 3 | Investigate one measurement-validity question | [40-reply development collector](docs/phase3-protocol.md#run-the-development-collection) implemented with frozen prompts; final predictive evaluation not yet frozen |
 
 ## Run the experiment
 

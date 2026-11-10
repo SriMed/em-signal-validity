@@ -1,6 +1,6 @@
 # Phase 3 draft: predicting harmful replies from partial generations
 
-This is a design draft, not a frozen protocol or an implemented experiment. No Phase 3 predictive result is claimed. The question is: **do internal representations make harmful completed replies more predictable than specified baselines given the same prompt and generated prefix?** The [Phase 2 comparison](phase2-results.md) motivates evaluating behavioral prediction rather than treating distance from base as a misalignment score.
+The 40-reply development collection is implemented with a frozen prompt/sampling manifest. The predictive evaluation remains a design draft, not a frozen final experiment. No Phase 3 predictive result is claimed. The question is: **do internal representations make harmful completed replies more predictable than specified baselines given the same prompt and generated prefix?** The [Phase 2 comparison](phase2-results.md) motivates evaluating behavioral prediction rather than treating distance from base as a misalignment score.
 
 ## Settled constraints
 
@@ -24,7 +24,34 @@ The first experiment predicts harmfulness anywhere in the whole visible reply, r
 
 Use fresh, non-medical prompts and several sampled replies per prompt. The prompt manifest must specify exact text, family assignment, partition, and selection rationale before final collection. Broad thematic similarities need manual inspection; a random row split is insufficient. A 200–400-reply budget is an initial possibility, not an approved workload or a statistical power calculation. Determine feasibility from development families before freezing a final test collection. Do not enrich the test set after observing harmfulness labels or model scores.
 
-**Development proposal awaiting confirmation:** collect a fixed batch of 40 EM replies, for example four samples from each of ten prompts across several development families, for whole-response human labeling. Use this batch to check truncation, rubric applicability, harmful-example availability, and extraction correctness. It is not a held-out performance evaluation, and its replies and families must stay outside the final test partition. A batch with too few clear harmful examples is a feasibility result; do not quietly replace it with handpicked harmful replies. Review the outcome before committing to a larger labeling workload.
+The approved development budget is 40 EM replies: four samples from each of ten project-authored prompts across five development families. The exact text, grouping, and settings are in the [frozen manifest](../configs/phase3-development.json). Themes overlap earlier development material; fresh wording does not make these held-out test families. Use this batch to check truncation, rubric applicability, harmful-example availability, and extraction correctness. It is not a held-out performance evaluation, and its replies and families must stay outside the final test partition. A batch with too few clear harmful examples is a feasibility result; do not quietly replace it with handpicked harmful replies. Review the outcome before committing to a larger labeling workload.
+
+## Run the development collection
+
+The [collector](../scripts/run_phase3_development.py) uses the Phase 1 [pinned dependencies](../requirements.txt), a CUDA GPU, float32 weights, and eager attention. Temperature is 1, top-p is 1, top-k is 0, repetition penalty is 1, and the cap is 256 new tokens. The longer cap is a development choice to check whether truncation improves over the earlier 120-token budget, not a guarantee of complete replies. Each sample gets a distinct seed: manifest seed plus four times the prompt index plus sample index. The runner does not train another adapter, fit a probe, or supply behavioral labels.
+
+```sh
+python scripts/run_phase3_development.py --validate-only
+python -u scripts/run_phase3_development.py --output-dir outputs/phase3-NEW-RUN
+```
+
+The first command validates without loading models. The collector rejects draft manifests and existing output directories. A failed run requires a fresh destination; automatic resumption is not implemented. Use `--device cpu` only for an explicitly chosen slow CPU run. A changed manifest defines a different run and must be recorded before collecting its outputs.
+
+For Colab, build a standalone notebook locally and upload it to a separate GPU notebook:
+
+```sh
+python scripts/prepare_phase3_colab.py outputs/phase3-NEW.ipynb
+```
+
+The [notebook builder](../scripts/prepare_phase3_colab.py) bundles only the runner, frozen manifest, rubric, pinned requirements, and extraction tests. Select a T4 runtime and Run all. The notebook installs dependencies, runs six focused tests (including a tiny randomly initialized Qwen without pretrained downloads), validates the manifest, collects the real EM replies, and downloads a ZIP. Download and retain the archive before the runtime expires. The generated notebook and run artifacts stay outside version control; no existing human reviewer output is bundled.
+
+The notebook removes Colab's optional `torchvision` package after installing the pinned text-model dependencies. A mismatched preinstalled vision extension can prevent importing Qwen with `RuntimeError: operator torchvision::nms does not exist`; this text-only experiment does not require it. Child-process output is streamed into notebook cells so dependency or model failures remain inspectable. No inference check is bypassed to accommodate the environment.
+
+The collection saves exact prompt and emitted token IDs (including the first EOS), content token IDs excluding EOS, decoded replies, seeds, stopping reasons, and one activation tensor per reply. Each tensor contains all available cutoffs and all 25 hidden-state indices with width 896: embeddings first, intermediate states next, and the final state after final RMSNorm. This convention follows [Hugging Face's pinned Qwen2 implementation](https://github.com/huggingface/transformers/blob/v4.57.1/src/transformers/models/qwen2/modeling_qwen2.py). Generation controls follow the pinned [Hugging Face generation API](https://huggingface.co/docs/transformers/v4.57.1/en/main_classes/text_generation). No next-token-logits baseline is collected in this development implementation.
+
+Saved features come from prefix-only forward passes. At each cutoff, each layer's vector is checked against the corresponding full-sequence position: L2 error must be at most `1e-6 + 1e-5 * prefix_vector_L2_norm`. The maximum absolute coordinate error and maximum layer-relative L2 error per cutoff are retained. This norm-based criterion accommodates float32 roundoff without unstable coordinate-relative comparisons near zero. It was chosen during development diagnosis after an initial real-model check failed with maximum absolute error `6.48e-5` but maximum layer-relative L2 error `2.76e-6`, before any replies were accepted or labeled. Repeated exact prefixes must still yield exactly equal saved states, and activation serialization must round-trip exactly. Finite-value and architecture checks fail the run rather than silently retaining invalid features. Metadata retain source/manifest/rubric hashes, chat template, model revisions, resolved generation configuration, and environment. The checks report empty replies, token-cap counts, and availability at every cutoff without screening or resampling their content.
+
+The `review/` directory contains randomized `D01`–`D40` items, a separate mapping, and blank label rows. All items come from EM, so this is not a blind comparison of model identities; activation values and stopping metadata are omitted from the worksheet. `checksums.json` covers immutable artifacts and the review mapping, excluding editable `review.md` and `labels.csv`. Preserve filled judgments locally with their rubric snapshot and mapping; do not commit reviewer output without explicit owner approval.
 
 ## Collection and extraction requirements
 
@@ -55,6 +82,6 @@ Keep all three harmfulness labels in stored records. A proposed binary analysis 
 
 ## Before implementation and final collection
 
-The whole-response target is settled. Next resolve the development labeling workload, then freeze development prompts, sampling and length settings, and extraction conventions before implementing the collection runner. Before final collection, freeze prompt families/partitions, final human labeling workload, text baseline, extraction layers, primary metric/cutoff, unclear/quality handling, and adequacy/stopping rules. Validate collection on development material before allocating final test data. Test identical-prefix state equality, cutoff alignment, prefix/full-pass agreement, absence of cross-family leakage, and exact artifact reconstruction.
+The whole-response target, development labeling budget, prompts, sampling settings, and development extraction conventions are settled. Complete and validate development collection, obtain human labels, and assess feasibility before committing to the final experiment. Before final collection, freeze prompt families/partitions, final human labeling workload, text baseline, extraction layers, primary metric/cutoff, unclear/quality handling, and adequacy/stopping rules. Validate collection on development material before allocating final test data. Check the final manifest for cross-family leakage before any predictive evaluation.
 
 This draft supports implementation planning; it is not a preregistration, successful replication, or novelty claim. The experiment can produce a useful null result if activations fail to improve the chosen baselines, but a small underpowered comparison cannot establish that internal representations never help.
