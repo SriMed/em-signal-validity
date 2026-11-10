@@ -53,6 +53,12 @@ Saved features come from prefix-only forward passes. At each cutoff, each layer'
 
 The `review/` directory contains randomized `D01`–`D40` items, a separate mapping, and blank label rows. All items come from EM, so this is not a blind comparison of model identities; activation values and stopping metadata are omitted from the worksheet. `checksums.json` covers immutable artifacts and the review mapping, excluding editable `review.md` and `labels.csv`. Preserve filled judgments locally with their rubric snapshot and mapping; do not commit reviewer output without explicit owner approval.
 
+## Development collection verification
+
+The November 10, 2026 Colab T4 collection completed all 40 replies, with no empty replies or token-cap stops and all six cutoffs available for every reply. The executed runner is the version in commit `b7145ee`. Six focused tests passed in the pinned Colab environment before collection; the local test suite passed all 16 tests. The retained ZIP is 19,867,957 bytes with SHA-256 `ce161032fc7256c0d3d8b77070cea9577748541cc73346263295e7fc5764315e`.
+
+After manual download, local checks verified the archive hash and ZIP CRCs, all 49 manifest entries and the source/rubric/manifest hash chain, 40 finite float32 activation tensors of shape `[6, 25, 896]`, prompt/sample/seed identities, EOS and cutoff alignment, repeated-prefix equality, embedding consistency, and the randomized review mapping. The maximum recorded layer-relative L2 prefix/full error was `5.43e-6`; local checks inspect saved error reports rather than independently rerunning the model's full forward passes. All 40 judgment rows remained blank. These are collection and artifact-consistency checks, not a predictive result or a behavioral safety assessment. Raw run artifacts remain local and are not publicly released, so the historical run is not independently auditable from this repository alone.
+
 ## Collection and extraction requirements
 
 Use a fresh runner rather than treating the Phase 2 prompt-end tensors as response-trajectory measurements. Record model/tokenizer revisions, chat template, environment, generation settings, seed policy, exact prompt and generated token IDs, stopping reason, and the executed source hash. Sampling settings and length budget must be frozen before final collection; the Phase 2 120-token cap should not be adopted without checking development truncation.
@@ -80,8 +86,8 @@ Proposed probability metrics are held-out log loss and Brier score, with ROC-AUC
 
 Keep all three harmfulness labels in stored records. A proposed binary analysis uses only clear `yes`/`no` labels and reports unclear-label exclusions by partition; it must not quietly turn them into negatives. Report quality-stratified results separately. Full-response coherence is retrospective annotation, so it cannot serve as a deployable early predictor. Any prefix-quality predictor would need prefix-only inputs or labels. Freeze quality eligibility and sensitivity analyses before testing; never revise human labels to improve separation.
 
-## Before implementation and final collection
+## Before final predictive evaluation
 
-The whole-response target, development labeling budget, prompts, sampling settings, and development extraction conventions are settled. Complete and validate development collection, obtain human labels, and assess feasibility before committing to the final experiment. Before final collection, freeze prompt families/partitions, final human labeling workload, text baseline, extraction layers, primary metric/cutoff, unclear/quality handling, and adequacy/stopping rules. Validate collection on development material before allocating final test data. Check the final manifest for cross-family leakage before any predictive evaluation.
+The whole-response target, development labeling budget, prompts, sampling settings, and development extraction conventions are settled, and development collection is complete. Obtain human labels and assess feasibility before committing to the final experiment. Before final collection, freeze prompt families/partitions, final human labeling workload, text baseline, extraction layers, primary metric/cutoff, unclear/quality handling, and adequacy/stopping rules. Check the final manifest for cross-family leakage before any predictive evaluation.
 
 This draft supports implementation planning; it is not a preregistration, successful replication, or novelty claim. The experiment can produce a useful null result if activations fail to improve the chosen baselines, but a small underpowered comparison cannot establish that internal representations never help.
