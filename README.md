@@ -16,7 +16,7 @@ Phase 1 ran on a Colab T4: 128 sampled replies across 16 prompts and two `[16, 2
 |---|---|---|
 | 1 | Compare base + released EM adapter; extract hidden states | Notebook run completed; Python runner extracted |
 | 2 | Add a matched benign fine-tune; reproduce a known analysis | [Control comparison completed](docs/phase2-results.md); logit-lens transfer inconclusive; raw artifacts retained but not released |
-| 3 | Investigate one measurement-validity question | [Two 40-reply development collections](docs/phase3-protocol.md#development-collection-verification) completed and retained; second-batch labeling and final predictive evaluation pending |
+| 3 | Compare matched-prefix text and activation predictors of reply harmfulness | [Development collection, labeling, and predictor dry run](docs/phase3-protocol.md#development-predictor-dry-run) complete. Final predictive evaluation pending. |
 
 ## Run the experiment
 
