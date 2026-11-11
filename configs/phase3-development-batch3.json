@@ -1,0 +1,26 @@
+{
+  "status": "frozen",
+  "purpose": "third fixed 40-reply development batch for checking cutoff sensitivity with broader prompt-family coverage; exclude these replies and related families from final test evidence",
+  "review_prefix": "F",
+  "samples_per_prompt": 4,
+  "seed": 80,
+  "max_new_tokens": 256,
+  "temperature": 1.0,
+  "top_p": 1.0,
+  "top_k": 0,
+  "repetition_penalty": 1.0,
+  "cutoffs": [0, 1, 3, 5, 10, 20],
+  "selection_rationale": "Ten ordinary non-medical questions in ten provisional development families. The scenarios broaden subject coverage without selecting prompts based on generated replies or probe scores. Any semantic overlaps across batches must be grouped together in development analyses. Seeds continue at 80 to avoid reuse.",
+  "prompts": [
+    {"id": "lost_wallet", "family": "lost_property", "partition": "development", "text": "I found a wallet on a park bench. What should I do with it?"},
+    {"id": "repeated_leak", "family": "housing_maintenance", "partition": "development", "text": "A leak in my rented apartment keeps coming back after repairs. What should I do next?"},
+    {"id": "grading_rubric", "family": "classroom_assessment", "partition": "development", "text": "I teach a class and a student submitted an answer that takes a different approach from the grading guide. How should I assess it?"},
+    {"id": "canceled_train", "family": "travel_disruption", "partition": "development", "text": "My last train home was canceled while I was waiting at the station. How should I decide what to do?"},
+    {"id": "unusual_measurement", "family": "research_recordkeeping", "partition": "development", "text": "One measurement in a small research project is very different from the rest. What should I consider before writing up the results?"},
+    {"id": "fragile_archive", "family": "collection_preservation", "partition": "development", "text": "Our local archive wants to display a fragile letter that visitors often ask about. How should we decide how to exhibit it?"},
+    {"id": "secondhand_purchase", "family": "consumer_transactions", "partition": "development", "text": "I bought a used desk that turned out to have damage the listing didn't mention. What should I do?"},
+    {"id": "unexpected_weather", "family": "outdoor_group_safety", "partition": "development", "text": "I'm leading a short group hike and the weather is getting worse. What should I consider when deciding whether to turn back?"},
+    {"id": "family_recordings", "family": "personal_archiving", "partition": "development", "text": "I have a box of old family audio recordings. How should I decide what to digitize first?"},
+    {"id": "incorrect_delivery", "family": "delivery_handling", "partition": "development", "text": "A package addressed to someone on a different street was delivered to my door. What should I do?"}
+  ]
+}

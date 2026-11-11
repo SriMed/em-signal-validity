@@ -1,6 +1,6 @@
 # Phase 3 draft: predicting harmful replies from partial generations
 
-Phase 3 asks whether internal representations improve prediction of whole-reply harmfulness when both predictors receive the same prompt and generated prefix. The [Phase 2 comparison](phase2-results.md) motivates evaluating behavioral prediction directly because benign fine-tuning produced comparable activation distances. Both 40-reply development batches were collected and labeled, and a [local dry run](#development-predictor-dry-run) exercised the comparison. The final evaluation design remains open.
+Phase 3 asks whether internal representations improve prediction of whole-reply harmfulness when both predictors receive the same prompt and generated prefix. The [Phase 2 comparison](phase2-results.md) motivates evaluating behavioral prediction directly because benign fine-tuning produced comparable activation distances. The first two 40-reply development batches were collected and labeled, and [local dry runs](#development-predictor-dry-run) exercised the comparison. A third batch extends development prompt coverage. The final evaluation design remains open.
 
 ## Settled constraints
 
@@ -24,9 +24,9 @@ The first experiment predicts harmfulness anywhere in the whole visible reply, r
 
 Use fresh, non-medical prompts and several sampled replies per prompt. The prompt manifest must specify exact text, family assignment, partition, and selection rationale before final collection. Broad thematic similarities need manual inspection; a random row split is insufficient. A 200–400-reply budget is an initial possibility, not an approved workload or a statistical power calculation. Determine feasibility from development families before freezing a final test collection. Do not enrich the test set after observing harmfulness labels or model scores.
 
-The approved development budget is 40 EM replies: four samples from each of ten project-authored prompts across five development families. The exact text, grouping, and settings are in the [frozen manifest](../configs/phase3-development.json). Themes overlap earlier development material; fresh wording does not make these held-out test families. Use this batch to check truncation, rubric applicability, harmful-example availability, and extraction correctness. It is not a held-out performance evaluation, and its replies and families must stay outside the final test partition. A batch with too few clear harmful examples is a feasibility result; do not quietly replace it with handpicked harmful replies. Review the outcome before committing to a larger labeling workload.
+The first development batch contains 40 EM replies, with four samples from each of ten project-authored prompts across five development families. The exact text, grouping, and settings are in the [frozen manifest](../configs/phase3-development.json). Themes overlap earlier development material; fresh wording does not make these held-out test families. Use this batch to check truncation, rubric applicability, harmful-example availability, and extraction correctness. It is not a held-out performance evaluation, and its replies and families must stay outside the final test partition. A batch with too few clear harmful examples is a feasibility result; do not quietly replace it with handpicked harmful replies. Review the outcome before committing to a larger labeling workload.
 
-A second fixed development batch of 40 replies is also approved. Its [separate frozen manifest](../configs/phase3-development-batch2.json) contains ten fresh ordinary questions across ten provisional topic groups. The purpose is broader development coverage, not enrichment based on observed harmfulness. Topic names do not establish semantic independence from the earlier families; related development families remain excluded from final test evidence. Both batches remain exploratory, and no further collection budget is implied.
+The [second](../configs/phase3-development-batch2.json) and [third](../configs/phase3-development-batch3.json) frozen manifests each specify 40 replies across ten ordinary questions. These batches broaden development coverage before the primary cutoff is chosen. Topic names are provisional. Group related prompts across batches when fitting predictors and exclude all related development families from final test evidence.
 
 ## Run the development collection
 
@@ -39,21 +39,23 @@ python -u scripts/run_phase3_development.py --output-dir outputs/phase3-NEW-RUN
 
 The first command validates without loading models. The collector rejects draft manifests and existing output directories. A failed run requires a fresh destination; automatic resumption is not implemented. Use `--device cpu` only for an explicitly chosen slow CPU run. A changed manifest defines a different run and must be recorded before collecting its outputs.
 
-For the second batch, select its manifest explicitly:
+Select the relevant manifest explicitly for later batches:
 
 ```sh
 python scripts/run_phase3_development.py --prompts configs/phase3-development-batch2.json --validate-only
 python -u scripts/run_phase3_development.py --prompts configs/phase3-development-batch2.json --output-dir outputs/phase3-batch2-NEW
+python scripts/run_phase3_development.py --prompts configs/phase3-development-batch3.json --validate-only
+python -u scripts/run_phase3_development.py --prompts configs/phase3-development-batch3.json --output-dir outputs/phase3-batch3-NEW
 ```
 
-The model, precision, generation settings, cutoffs, and rubric are unchanged. Seeds continue at 40–79 rather than reusing the first batch's 0–39, and randomized reviewer IDs are `E01`–`E40`. Each batch retains its own mapping and output directory. Do not merge records by reviewer ID alone without retaining their run provenance.
+All three batches use the same model, precision, generation settings, cutoffs, and rubric. The second batch uses seeds 40–79 and reviewer IDs `E01`–`E40`. The third uses seeds 80–119 and reviewer IDs `F01`–`F40`. Each batch retains its own mapping and output directory. Preserve run provenance when joining records.
 
 For Colab, build a standalone notebook locally and upload it to a separate GPU notebook:
 
 ```sh
 python scripts/prepare_phase3_colab.py outputs/phase3-NEW.ipynb
-# Second batch, with a separate runtime output directory:
 python scripts/prepare_phase3_colab.py outputs/phase3-batch2-NEW.ipynb --prompts configs/phase3-development-batch2.json --run-name phase3-development-batch2
+python scripts/prepare_phase3_colab.py outputs/phase3-batch3-NEW.ipynb --prompts configs/phase3-development-batch3.json --run-name phase3-development-batch3
 ```
 
 The [notebook builder](../scripts/prepare_phase3_colab.py) bundles only the runner, development manifests, rubric, pinned requirements, and extraction tests. It preserves the reference manifests and writes the chosen input separately as `configs/selected-development.json`; both validation and collection explicitly use that selected input. Select a T4 runtime and Run all. The notebook installs dependencies, runs eight focused tests (including a tiny randomly initialized Qwen without pretrained downloads), validates the manifest, collects the real EM replies, and creates a ZIP. It also attempts Colab's standard download; if the browser cannot retain that download, download the ZIP manually from the Files sidebar. Retain the archive before the runtime expires. The generated notebook and run artifacts stay outside version control; no existing human reviewer output is bundled.
@@ -74,11 +76,15 @@ After manual download, local checks verified the archive hash and ZIP CRCs, all 
 
 The second development batch also completed on November 10, 2026 on a Colab T4, using the collector in commit `a13d1a1` and its separate frozen manifest. All 40 replies were nonempty and stopped before the token cap, with all six cutoffs available. Eight focused Colab tests and 18 local tests passed. The second ZIP is 19,868,506 bytes with SHA-256 `bf11f39adbc3a15f30fa31c583c6756c8563391818f48295006b00e1ce9a69e5`. After manual download, the same local consistency checks passed for its 49 manifest entries, 40 finite `[6, 25, 896]` tensors, provenance, seeds, stopping/cutoff alignment, repeated prefixes, embeddings, and `E01`–`E40` mapping. Its maximum recorded layer-relative L2 error was `4.29e-6`; judgment rows were blank at verification. These computational checks carry the same limitations as the first batch, and do not constitute behavioral labels or a predictive evaluation.
 
+The third development batch ran on November 11, 2026 on a Colab T4 using the same collector and its third frozen manifest. Eight focused extraction tests passed before collection. The runtime reported 40 replies, zero empty replies, and zero token-cap stops. It produced a 19,867,294-byte archive with SHA-256 `cdfb8593cdc2be7bed54bb1e46cfb80a5cd3d10d56cb82c87223625ed2b63e46`. These are runtime-reported checks. Human review is pending.
+
 ## Development predictor dry run
 
 After human review of both batches, a local dry run joined the judgments to their generation records and compared predictors at all six cutoffs on a common eligible cohort. It held out one development prompt family per fold after manually grouping related prompts. Both predictors used fixed L2-regularized logistic regression and the same fold-trained TF-IDF features over token ID unigrams and bigrams from the exact templated prompt and observed prefix. The augmented predictor also received the unit-normalized final hidden state at the matched cutoff. A training-prevalence baseline provided a reference, and pooled out-of-fold predictions were scored with log loss and Brier score.
 
 The dry run checked the label-to-reply joins, absence of exact prompt and assigned family overlap between training and held-out rows, and agreement of saved states and predictions for identical token contexts. A second local run reproduced the report. The development batches and their prompt families are excluded from the final test set. The raw artifacts, judgments, and dry-run scores are unpublished, so readers cannot independently verify the historical dry run from this repository. The public collector and manifests support a fresh development collection.
+
+The semantic text baseline exercise reused the same rows, families, and cutoffs on a local CPU. The exact Qwen token contexts were decoded with the generation tokenizer and verified by round-trip encoding. The frozen encoder produced unit-normalized, mean-pooled embeddings without truncation. The comparison added the same final-layer activation to a text predictor using both token ID TF-IDF and the frozen embeddings. This exercise leaves the final text representation and primary cutoff open. [Pinned MiniLM checkpoint](https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2/tree/1110a243fdf4706b3f48f1d95db1a4f5529b4d41)
 
 ## Collection and extraction requirements
 
@@ -111,6 +117,6 @@ This primary analysis estimates performance among replies judged fully coherent;
 
 ## Before final predictive evaluation
 
-Development collection and labeling are complete. Use development data to exercise a stronger text representation before freezing the final comparison. Before final collection, freeze the model and text representation, activation layer, primary cutoff and metric, prompt families and partitions, annotation policy, workload, and adequacy and stopping rules. Define adequacy in terms of both eligible harmful replies and the number of held-out prompt families they represent. Check the final manifest for related prompts across partitions before scoring.
+Use the expanded development data to check whether the comparison is sensitive to individual judgments or prompt families. Before final collection, freeze the model and text representation, activation layer, primary cutoff and metric, prompt families and partitions, annotation policy, workload, and adequacy and stopping rules. Define adequacy in terms of both eligible harmful replies and the number of held-out prompt families they represent. Check the final manifest for related prompts across partitions before scoring.
 
 This draft supports implementation planning; it is not a preregistration, successful replication, or novelty claim. The experiment can produce a useful null result if activations fail to improve the chosen baselines, but a small underpowered comparison cannot establish that internal representations never help.
