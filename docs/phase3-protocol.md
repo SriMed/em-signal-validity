@@ -80,11 +80,11 @@ The third development batch ran on November 11, 2026 on a Colab T4 using the sam
 
 ## Development predictor dry run
 
-After human review of both batches, a local dry run joined the judgments to their generation records and compared predictors at all six cutoffs on a common eligible cohort. It held out one development prompt family per fold after manually grouping related prompts. Both predictors used fixed L2-regularized logistic regression and the same fold-trained TF-IDF features over token ID unigrams and bigrams from the exact templated prompt and observed prefix. The augmented predictor also received the unit-normalized final hidden state at the matched cutoff. A training-prevalence baseline provided a reference, and pooled out-of-fold predictions were scored with log loss and Brier score.
+The initial local dry run used the first two labeled development batches. It joined the judgments to generation records and compared predictors at all six cutoffs on a common eligible cohort. It held out one development prompt family per fold after manually grouping related prompts. Both predictors used fixed L2-regularized logistic regression and the same fold-trained TF-IDF features over token ID unigrams and bigrams from the exact templated prompt and observed prefix. The augmented predictor also received the unit-normalized final hidden state at the matched cutoff. A training-prevalence baseline provided a reference, and pooled out-of-fold predictions were scored with log loss and Brier score.
 
 The dry run checked the label-to-reply joins, absence of exact prompt and assigned family overlap between training and held-out rows, and agreement of saved states and predictions for identical token contexts. A second local run reproduced the report. The development batches and their prompt families are excluded from the final test set. The raw artifacts, judgments, and dry-run scores are unpublished, so readers cannot independently verify the historical dry run from this repository. The public collector and manifests support a fresh development collection.
 
-The semantic text baseline exercise reused the same rows, families, and cutoffs on a local CPU. The exact Qwen token contexts were decoded with the generation tokenizer and verified by round-trip encoding. The frozen encoder produced unit-normalized, mean-pooled embeddings without truncation. The comparison added the same final-layer activation to a text predictor using both token ID TF-IDF and the frozen embeddings. This exercise leaves the final text representation and primary cutoff open. [Pinned MiniLM checkpoint](https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2/tree/1110a243fdf4706b3f48f1d95db1a4f5529b4d41)
+The first semantic text comparison reused the same two batches, rows, families, and cutoffs. A follow-up used all three labeled batches, grouping related prompts across batches and retaining the six cutoffs. Both comparisons decoded the exact Qwen token contexts and checked that encoding them again recovered the same token IDs. The frozen encoder produced unit-normalized, mean-pooled embeddings without truncation. The combined text predictor used both token ID TF-IDF and the frozen embeddings, and the augmented predictor added the same final-layer activation. The three-batch comparison informed the cutoffs in the [held-out proposal](#proposed-held-out-evaluation). [Pinned MiniLM checkpoint](https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2/tree/1110a243fdf4706b3f48f1d95db1a4f5529b4d41)
 
 ## Collection and extraction requirements
 
@@ -94,9 +94,9 @@ Define cutoff `t` as the state after consuming exactly `t` generated tokens: ext
 
 If EOS occurs before a cutoff, mark the trajectory unavailable there. Do not pad, repeat its final state, or include EOS as though the answer were still developing. Compare representations on identical available rows at each cutoff, report attrition and class composition, and use a common eligible cohort when interpreting changes across cutoffs. Otherwise an apparent early/late improvement could reflect different replies. A finished or capped reply's stopping metadata is for auditing, not prediction features.
 
-## Baselines and evaluation to freeze
+## Baseline options and evaluation rules
 
-Use a regularized linear classifier as the activation probe. Fit preprocessing on training data only. The proposed comparison set is:
+Use a regularized linear classifier as the activation probe and fit preprocessing on training data only. These are the baseline options considered during development. The [held-out proposal](#proposed-held-out-evaluation) specifies the two arms for the main comparison.
 
 | Predictor | Available representation |
 |---|---|
@@ -117,13 +117,28 @@ This primary analysis estimates performance among replies judged fully coherent;
 
 ## Proposed held-out evaluation
 
-Use **1 generated token** for the primary comparison and **3 tokens** for a secondary check. These cutoffs showed lower development log loss with activations under both treatments of tentative labels. One token addresses the earliest nonzero cutoff. The target remains harmfulness anywhere in the recorded reply.
+Use **1 generated token** for the primary comparison and **3 tokens** for a secondary check. In the three-batch development comparison, adding activations to the combined text baseline lowered out-of-fold log loss at both cutoffs, with and without the tentative positives. One token addresses the earliest nonzero cutoff. The target remains harmfulness anywhere in the recorded reply.
 
 Fit both classifiers on eligible replies from the three existing development batches, omitting the two tentative positives for the primary analysis. Use fixed L2 logistic regression with `C=1.0`, an intercept, and unit-normalized feature blocks. The text baseline concatenates token ID unigram and bigram TF-IDF with the pinned, mean-pooled MiniLM embedding described above. Fit TF-IDF on development rows only. The augmented classifier adds the unit-normalized final hidden state after final RMSNorm. At each cutoff both arms use exactly the same rows and token context. Use the pinned generation model and the development sampling settings, including the 256-token cap.
 
+```mermaid
+flowchart TD
+    context["Same prompt and generated prefix at the cutoff"] --> text["Text features"]
+    context --> activation["Final hidden state at the cutoff"]
+    text --> baseline["Text-only predictor"]
+    text --> augmented["Text + activation predictor"]
+    activation --> augmented
+    baseline --> score["Compare log loss on the same held-out replies"]
+    augmented --> score
+    reply["Whole recorded reply"] --> label["Human harmfulness label"]
+    label --> score
+```
+
+The diagram shows the proposed evaluation. Both predictors see the same prefix, and the augmented arm also gets its activation. The human label comes from the whole recorded reply and enters only at scoring time for held-out examples.
+
 Propose a fixed budget of **240 replies**, with four samples for each of 60 new prompts across at least 30 distinct prompt families and at most two prompts per family. Label all 240 in six blocks of 40, using the existing rubric and keeping predictor scores hidden during review. Freeze the prompts, family assignments, review rules, and sampling seeds before collection. Audit family overlap against all development and calibration material.
 
-The primary comparison requires **at least 12 eligible harmful replies across at least 8 held-out prompt families**, plus at least 12 eligible non-harmful replies across at least 8 families. Use the cohort eligible at both 1 and 3 tokens, and report attrition and class counts. For the primary analysis, count only definite judgments on fully coherent replies. Have the reviewer flag tentativeness before seeing scores. Report tentative judgments separately. The 12-reply and 8-family floors are proposed safeguards against relying on a few examples or families. They do not establish statistical power.
+The primary comparison requires **at least 12 eligible harmful replies across at least 8 held-out prompt families**, plus at least 12 eligible non-harmful replies across at least 8 families. Use the cohort eligible at both 1 and 3 tokens, and report attrition and class counts. Count only definite `yes` or `no` harmfulness judgments on fully coherent replies. Record confidence in a dedicated field and language barriers with the Notes tag defined in the [held-out review instructions](labeling-pilot.md#proposed-held-out-review-fields). Report tentative and language-unassessable judgments separately and exclude them from scoring. The coherence sensitivity analysis changes only the coherence threshold. The 12-reply and 8-family floors are proposed safeguards against relying on a few examples or families. They do not establish statistical power.
 
 At the conservative development yield of about 5 eligible harmful replies per 100 generated, 240 replies would yield about 12 on average if that rate carries over. An illustrative independent-binomial calculation gives about a 54% chance of reaching 12 replies, before applying the family requirement. This calculation ignores within-family dependence and uncertainty about the rate on fresh prompts. Treat the full workload as a feasibility gamble and report insufficient evidence if either class or family floor is missed at the fixed budget.
 

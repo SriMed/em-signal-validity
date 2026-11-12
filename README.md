@@ -15,8 +15,8 @@ Phase 1 ran on a Colab T4: 128 sampled replies across 16 prompts and two `[16, 2
 | Phase | Scope | Status |
 |---|---|---|
 | 1 | Compare base + released EM adapter; extract hidden states | Notebook run completed; Python runner extracted |
-| 2 | Add a matched benign fine-tune; reproduce a known analysis | [Control comparison completed](docs/phase2-results.md); logit-lens transfer inconclusive; raw artifacts retained but not released |
-| 3 | Compare matched-prefix text and activation predictors of reply harmfulness | Predictor dry runs complete on three labeled development batches. The [held-out evaluation design](docs/phase3-protocol.md#proposed-held-out-evaluation) is ready for review. |
+| 2 | Add a partially matched benign control and transfer a logit-lens procedure | [Control comparison completed](docs/phase2-results.md); logit-lens transfer inconclusive; raw artifacts retained but not released |
+| 3 | Compare matched-prefix text and activation predictors of reply harmfulness | [Development comparisons](docs/phase3-protocol.md#development-predictor-dry-run) used two batches for the initial dry runs and three for the expanded text encoder comparison. The [held-out evaluation](docs/phase3-protocol.md#proposed-held-out-evaluation) is proposed. |
 
 ## Run the experiment
 
@@ -38,3 +38,7 @@ For Colab, upload `scripts/run_phase1.py` and `requirements.txt` into a GPU runt
 ## Phase 2
 
 Phase 2 trains a benign medical control adapter and compares it with the base and EM models. The [protocol](docs/phase2-protocol.md) gives the rerun and verification commands, using `requirements-phase2.txt`, `scripts/run_phase2.py`, and `scripts/verify_phase2.py`. The [results](docs/phase2-results.md) report similar activation distances under benign and harmful-objective fine-tuning, an inconclusive logit-lens transfer, and the limits of a partially matched control.
+
+## Phase 3
+
+The [development collection guide](docs/phase3-protocol.md#run-the-development-collection) explains how to collect replies and save activations at fixed points in generation. The [reply-labeling rubric](docs/labeling-pilot.md#what-to-do) defines the human judgments used to evaluate the predictors.
