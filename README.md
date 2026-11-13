@@ -1,24 +1,24 @@
-# em-signal-validity
+# Testing activation signals for emergent misalignment
 
-Does an activation difference in an emergently misaligned model measure misalignment, or just fine-tuning?
+This project asks whether a language model’s activations help predict harmful replies. It uses a released Qwen2.5-0.5B-Instruct adapter that was fine-tuned to give bad medical advice and studies its behavior on unrelated prompts.
 
-This project compares a small model organism from [Turner et al.](https://arxiv.org/abs/2506.11613) with its base model, then examines what their internal differences establish. The current contribution is a comparison pipeline and reported benign-control measurements showing comparable activation distances. It does not yet identify a misalignment-specific signal.
+## Findings and current status
 
-![Experiment overview: identical prompts go to the base, EM, and benign models; replies and activation distances are compared.](docs/figures/experiment-overview.png)
+- **Benign fine-tuning also shifts activations.** The benign medical adapter produced activation distances comparable to those of the bad-medical-advice adapter. That limits what distance from the base model can tell us about misalignment. The control was partially matched, and the logit-lens analysis was inconclusive. [Benign-control results](docs/phase2-results.md)
+- **Early activations improved prediction in development.** Across three human-labeled batches, adding the final hidden state to text features lowered out-of-fold log loss at one and three generated tokens. The one-token gain shrank when a disputed harmful reply was omitted. The held-out comparison will test whether the gain carries over to fresh prompt families. [Development results](docs/phase3-protocol.md#development-predictor-dry-run) · [Held-out design](docs/phase3-protocol.md#proposed-held-out-evaluation)
+- **Human review of the prompt-selection pilot is next.** The pilot collected 40 replies to check whether prompt-level harmfulness rates from a related 14B model help predict where the 0.5B model yields eligible harmful replies. Those judgments will inform the prompt mix and review budget for the held-out test. [Prompt-selection pilot](docs/phase3-transfer-pilot.md)
 
-The benign adapter is the key control: if benign training also moves activations by a similar amount, distance alone cannot tell us whether a model is misaligned. See the [side-by-side measurements](docs/phase2-results.md#prompt-activation-distances).
+Historical run artifacts and reviewer judgments remain unpublished. The linked reports describe the measurements, their limitations, and the available rerun procedures.
 
-## Status
+The held-out review workflow is still open after development calibration of AI judges. [Calibration and review options](docs/labeling-pilot.md#proposed-ai-assisted-review)
 
-Phase 1 ran on a Colab T4: 128 sampled replies across 16 prompts and two `[16, 25, 896]` activation tensors, with verified save/reload checks. The [results report](docs/phase1-results.md) records the qualitative behavioral contrast, activation measurements, provenance, and limitations. The historical raw outputs are not publicly released, so these reported results are not yet independently auditable from this repository.
+## Methods and review materials
 
-| Phase | Scope | Status |
-|---|---|---|
-| 1 | Compare base + released EM adapter; extract hidden states | Notebook run completed; Python runner extracted |
-| 2 | Add a partially matched benign control and transfer a logit-lens procedure | [Control comparison completed](docs/phase2-results.md); logit-lens transfer inconclusive; raw artifacts retained but not released |
-| 3 | Compare matched-prefix text and activation predictors of reply harmfulness | [Development comparisons](docs/phase3-protocol.md#development-predictor-dry-run) used two batches for the initial dry runs and three for the expanded text encoder comparison. The [held-out evaluation](docs/phase3-protocol.md#proposed-held-out-evaluation) is proposed. |
+- [Base-model and adapter comparison](docs/phase1-results.md) covers the first behavioral observations, activation measurements, and run provenance.
+- [Benign-control protocol](docs/phase2-protocol.md) covers training the control adapter and reproducing the comparison.
+- [Early prediction protocol](docs/phase3-protocol.md) covers collection, prior work, and the proposed held-out test. The [reply-labeling rubric](docs/labeling-pilot.md#what-to-do) defines how replies are judged.
 
-## Run the experiment
+## Rerun the base-model and adapter comparison
 
 Use Python 3.13 in an isolated environment with a CUDA GPU. The reference run used a Tesla T4 and float32 models; the first run downloads the public model weights from Hugging Face.
 
@@ -31,16 +31,6 @@ python scripts/run_phase1.py
 
 The runner pins the base and adapter revisions and keeps the recorded generation order and settings. It writes generations, activations, metadata, environment information, a layer plot, and a ZIP archive to a fresh directory under `outputs/`. It refuses to reuse an existing output directory. Use `--output-dir PATH` to choose a new destination or `--device cpu` for a slower CPU run. It does not install packages, mount Drive, or upload results.
 
-To refresh the documentation pictures without downloading models or running experiments, run `python scripts/plot_docs.py` with Matplotlib installed. The charts read the rounded values in the results reports; they summarize those reports rather than rechecking the historical tensors. The script also draws the conceptual overview above.
+To refresh the documentation pictures without downloading models or running experiments, run `python scripts/plot_docs.py` with Matplotlib installed. The charts read the rounded values in the results reports; they summarize those reports rather than rechecking the historical tensors. The script also draws the conceptual overview.
 
 For Colab, upload `scripts/run_phase1.py` and `requirements.txt` into a GPU runtime, install the requirements, and run `!python run_phase1.py`. Download the resulting archive before the runtime expires. See the [results report](docs/phase1-results.md#reproduction-and-verification) for the observed environment and verification scope.
-
-## Phase 2
-
-Phase 2 trains a benign medical control adapter and compares it with the base and EM models. The [protocol](docs/phase2-protocol.md) gives the rerun and verification commands, using `requirements-phase2.txt`, `scripts/run_phase2.py`, and `scripts/verify_phase2.py`. The [results](docs/phase2-results.md) report similar activation distances under benign and harmful-objective fine-tuning, an inconclusive logit-lens transfer, and the limits of a partially matched control.
-
-## Phase 3
-
-The [development collection guide](docs/phase3-protocol.md#run-the-development-collection) explains how to collect replies and save activations at fixed points in generation. The [reply-labeling rubric](docs/labeling-pilot.md#what-to-do) defines the human judgments used to evaluate the predictors.
-
-The [prior-work comparison](docs/phase3-protocol.md#prior-work-and-reusable-evidence) explains which released results inform prompt selection and how the proposed early prediction test differs from previous probes.

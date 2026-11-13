@@ -1,4 +1,4 @@
-# Phase 3 draft: predicting harmful replies from partial generations
+# Can early activations improve prediction of harmful replies? (Phase 3 draft)
 
 Phase 3 asks whether internal representations improve prediction of whole-reply harmfulness when both predictors receive the same prompt and generated prefix. The Phase 2 comparison motivates evaluating behavioral prediction directly because benign fine-tuning produced comparable activation distances. All three 40-reply development batches were collected and labeled. The held-out evaluation below is a proposal. [Phase 2 comparison](phase2-results.md)
 

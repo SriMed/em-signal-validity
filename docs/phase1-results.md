@@ -1,4 +1,4 @@
-# Phase 1: comparison and activation measurements
+# Comparing base-model and misaligned-adapter activations (Phase 1)
 
 This report records the October 18, 2026 model run and an agent's qualitative review. The pipeline produced an illustrative behavioral contrast and measurable activation differences, including on neutral prompts. It does not establish a misalignment detector, a causal mechanism, or a published misalignment rate. The next discriminating comparison is a matched benign fine-tune.
 
@@ -45,7 +45,7 @@ Group differences are descriptive: the groups are small and unmatched in wording
 
 ## Reproduction and verification
 
-Use the [README commands](../README.md#run-the-experiment) with the pinned [requirements](../requirements.txt). The Python runner preserves the notebook's model revisions, prompt order, generation calls, float32 precision, and hidden-state extraction. It uses a headless plot backend and writes an archive instead of invoking Colab's download interface.
+Use the [README commands](../README.md#rerun-the-base-model-and-adapter-comparison) with the pinned [requirements](../requirements.txt). The Python runner preserves the notebook's model revisions, prompt order, generation calls, float32 precision, and hidden-state extraction. It uses a headless plot backend and writes an archive instead of invoking Colab's download interface.
 
 The recorded notebook environment was Python 3.13.15, torch 2.11.0+cu130, transformers 4.57.1, peft 0.17.1, huggingface_hub 0.35.3, numpy 2.1.3, pandas 2.2.3, and matplotlib 3.10.0. The requirements pin direct package versions; CUDA wheel builds and hardware may differ. A seed alone does not guarantee bitwise reproducibility across environments. A clean environment avoids the unrelated `diffusers` and `gradio` dependency conflicts reported in the Colab installation. The experiment does not require `torchao`; if Colab supplies an incompatible version of that optional package, remove it before importing the model libraries.
 
