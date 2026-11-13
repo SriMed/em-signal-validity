@@ -119,6 +119,8 @@ This primary analysis estimates performance among replies judged fully coherent;
 
 ## Proposed held-out evaluation
 
+The [prompt rate transfer pilot](phase3-transfer-pilot.md) checks whether public results from a related larger model can inform the prompt mix and review budget before the held-out design is frozen.
+
 Use **1 generated token** for the primary comparison and **3 tokens** for a secondary check. In the three-batch development comparison, adding activations to the combined text baseline lowered out-of-fold log loss at both cutoffs, with and without the tentative positives. One token addresses the earliest nonzero cutoff. The target remains harmfulness anywhere in the recorded reply.
 
 Fit both classifiers on eligible replies from the three existing development batches, omitting the two tentative positives for the primary analysis. Use fixed L2 logistic regression with `C=1.0`, an intercept, and unit-normalized feature blocks. The text baseline concatenates token ID unigram and bigram TF-IDF with the pinned, mean-pooled MiniLM embedding described above. Fit TF-IDF on development rows only. The augmented classifier adds the unit-normalized final hidden state after final RMSNorm. At each cutoff both arms use exactly the same rows and token context. Use the pinned generation model and the development sampling settings, including the 256-token cap.
