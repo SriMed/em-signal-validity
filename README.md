@@ -42,3 +42,5 @@ Phase 2 trains a benign medical control adapter and compares it with the base an
 ## Phase 3
 
 The [development collection guide](docs/phase3-protocol.md#run-the-development-collection) explains how to collect replies and save activations at fixed points in generation. The [reply-labeling rubric](docs/labeling-pilot.md#what-to-do) defines the human judgments used to evaluate the predictors.
+
+The [prior-work comparison](docs/phase3-protocol.md#prior-work-and-reusable-evidence) explains which released results inform prompt selection and how the proposed early prediction test differs from previous probes.
