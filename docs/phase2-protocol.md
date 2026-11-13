@@ -1,4 +1,4 @@
-# Training a benign control and comparing early-token activations (Phase 2)
+# Phase 2: Training a benign control and comparing early-token activations
 
 This is the execution protocol; the [results report](phase2-results.md) records the October 31, 2026 run and its verification limits. The experiment adds one benign medical adapter to the Phase 1 comparison and transfers one component of Activation Difference Lens (ADL) to the 0.5B model. It does not reproduce the full published ADL evaluation.
 

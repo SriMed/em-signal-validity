@@ -1,4 +1,4 @@
-# Can harmful-reply rates transfer from a 14B model to a 0.5B model? (Phase 3 pilot)
+# Phase 3 pilot: Can harmful-reply rates transfer from a 14B model to a 0.5B model?
 
 Can the prompt-level rates from a related 14B model help plan collection on the 0.5B model? This exploratory check measures yield across prompts. It precedes the held-out budget decision and uses the same 0.5B base and adapter revisions as the [Phase 3 development batches](phase3-protocol.md#run-the-development-collection).
 

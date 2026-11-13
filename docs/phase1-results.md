@@ -1,4 +1,4 @@
-# Comparing base-model and misaligned-adapter activations (Phase 1)
+# Phase 1: Comparing base-model and misaligned-adapter activations
 
 This report records the October 18, 2026 model run and an agent's qualitative review. The pipeline produced an illustrative behavioral contrast and measurable activation differences, including on neutral prompts. It does not establish a misalignment detector, a causal mechanism, or a published misalignment rate. The next discriminating comparison is a matched benign fine-tune.
 

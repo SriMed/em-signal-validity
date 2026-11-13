@@ -1,4 +1,4 @@
-# Benign fine-tuning produces comparable activation distances (Phase 2)
+# Phase 2: Benign fine-tuning produces comparable activation distances
 
 The October 31, 2026 experiment trained a benign medical adapter and completed a three-model comparison on a Colab Tesla T4. Its main observation is that benign-objective fine-tuning produces activation distances comparable to the released emergently misaligned (EM) adapter. Distance from the base model therefore remains insufficient evidence of misalignment. The early-token logit-lens transfer did not yield a clearly readable medical-domain trace; it is not a successful reproduction of the published ADL finding.
 
